@@ -1,0 +1,68 @@
+{
+  "singleton": true,
+  "category": "device_enhancements",
+  "author": "Magnus Johansson",
+  "icon": "icon.png",
+  "moduleName": "ZWayMqttEndpoint",
+  "version": "1.0.0",
+  "maturity": "alpha",
+  /*
+    "repository" : {
+      "type" : "git",
+      "source" : "https://github.com/goodfield/zway-mqtt"
+    },*/
+  "defaults": {
+    "title": "ZWayMqttEndpoint",
+    "description": "MQTT integration",
+    "host": "localhost",
+    "port": "1883",
+    "username": "",
+    "password": "",
+    "topic_prefix": "zway"
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "host": {
+        "required": true
+      },
+      "port": {
+        "required": true
+      },
+      "username": {
+        "required": false
+      },
+      "password": {
+        "required": false
+      },
+      "topic_prefix": {
+        "required": true
+      }
+    },
+    "required": true
+  },
+  "options": {
+    "fields": {
+      "host": {
+        "label": "Hostname/IP",
+        "required": true
+      },
+      "port": {
+        "label": "Port",
+        "required": true
+      },
+      "username": {
+        "label": "Username",
+        "required": true
+      },
+      "password": {
+        "label": "Password",
+        "required": true
+      },
+      "topic_prefix": {
+        "label": "Topic Prefix",
+        "required": true
+      }
+    }
+  }
+}
