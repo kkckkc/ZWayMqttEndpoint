@@ -20,20 +20,18 @@ describe("ZWay Plugin", function() {
 
     it("can be instantiated", function(done) {
         var z = new ZwayMqttEndpoint("id", new Controller());
-        z.onconnected = function() {
+        z.init({ host: "localhost", port: PORT }, function() {
             done();
             z.end();
-        };
-        z.init({ host: "localhost", port: PORT });
+        });
 
         assert.notEqual(null, z.controller);
     });
 
     it("should emit events on mqtt topic", function(done) {
-        var controller = new Controller(),
-            z = new ZwayMqttEndpoint("id", controller),
-            externalClient = mqtt.connect("mqtt://localhost:" + PORT);
+        var z = new ZwayMqttEndpoint("id", new Controller());
 
+        var externalClient = mqtt.connect("mqtt://localhost:" + PORT);
         externalClient.on("message", function (topic, message) {
             assert.equal("zway/devices/id/update", topic);
             assert.equal("deviceType", JSON.parse(String.fromCharCode.apply(null, message)).type);
@@ -43,30 +41,31 @@ describe("ZWay Plugin", function() {
         });
 
         externalClient.subscribe('#', function() {
-            z.onconnected = function() {
-                controller.emit("change:metrics:level", new Device({ "id": "id", "metrics:title": "title", "metrics:level": "level",
-                    "metrics:icon": "icon", "deviceType": "deviceType" }));
-            };
-            z.init({ host: "localhost", port: PORT, topic_prefix: "zway" });
+            z.init({ host: "localhost", port: PORT, topic_prefix: "zway" }, function() {
+                z.controller.emit("change:metrics:level", new Device({
+                    id: "id",
+                    "metrics:title": "title",
+                    "metrics:level": "level",
+                    "metrics:icon": "icon",
+                    deviceType: "deviceType"
+                }));
+            });
         });
     });
 
     it("should call device command on mqtt messages", function (done) {
-        var device = new Device({ id: "id-182" }),
-            controller = new Controller([ device ]),
-            z = new ZwayMqttEndpoint("id", controller),
-            externalClient = mqtt.connect("mqtt://localhost:" + PORT);
+        var mockDevice = new Device({ id: "id-182" });
+        var z = new ZwayMqttEndpoint("id", new Controller([ mockDevice ]));
 
-        device.performCommand = function(cmd, args) {
+        mockDevice.performCommand = function(cmd, args) {
             assert.equal(cmd, "set");
             assert.equal(null, args);
             done();
             z.end();
         };
 
-        z.onconnected = function() {
-            externalClient.publish("zway/devices/id_182/set", '{ "command": "set" }');
-        };
-        z.init({ host: "localhost", port: PORT, topic_prefix: "zway" });
+        z.init({ host: "localhost", port: PORT, topic_prefix: "zway" }, function() {
+            mqtt.connect("mqtt://localhost:" + PORT).publish("zway/devices/id_182/set", '{ "command": "set" }');
+        });
     });
 });

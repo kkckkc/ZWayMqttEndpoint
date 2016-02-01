@@ -38,7 +38,8 @@ describe("MQTT client", function() {
             };
             m.connect({}, function () {
                 m.subscribe("test/test", function() {
-                    anonymousServer.publish({ topic: 'test/test', payload: 'Lorem ipsum'});
+                    var externalClient = mqtt.connect("mqtt://localhost:" + PORT);
+                    externalClient.publish('test/test', 'Lorem ipsum');
                 });
             });
         });
@@ -54,7 +55,7 @@ describe("MQTT client", function() {
             });
 
             externalClient.subscribe('test/send-test', function() {
-                return client().connect({}, function (pkg, c) {
+                client().connect({}, function (pkg, c) {
                     c.publish("test/send-test", "Dolor sit amet");
                 });
             });

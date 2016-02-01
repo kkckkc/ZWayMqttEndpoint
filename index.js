@@ -1,15 +1,15 @@
 function ZwayMqttEndpoint(id, controller) {
     ZwayMqttEndpoint.super_.call(this, id, controller);
-    this.onconnected = function() { };
 }
 
 inherits(ZwayMqttEndpoint, AutomationModule);
 _module = ZwayMqttEndpoint;
 
-ZwayMqttEndpoint.prototype.init = function (config) {
+ZwayMqttEndpoint.prototype.init = function (config, callback) {
     ZwayMqttEndpoint.super_.prototype.init(this, config);
 
-    var self = this;
+    var self = this,
+        callback = callback || function () { };
 
     var deviceToTopic = function (d) {
         var id = d.get("id").toLowerCase().replace(/[^a-z0-9]/g, "_");
@@ -74,9 +74,7 @@ ZwayMqttEndpoint.prototype.init = function (config) {
             }
         };
 
-        mqttClient.subscribe(self.config.topic_prefix + "/#", function() {
-            self.onconnected();
-        });
+        mqttClient.subscribe(self.config.topic_prefix + "/#", callback);
     };
 
     this.end = function () {
