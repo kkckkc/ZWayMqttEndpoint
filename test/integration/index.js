@@ -68,4 +68,21 @@ describe("ZWay Plugin", function() {
             mqtt.connect("mqtt://localhost:" + PORT).publish("zway/devices/id_182/set", '{ "command": "set" }');
         });
     });
+
+    it("should send status update back when requesting a full status updated", function(done) {
+        var z = new ZwayMqttEndpoint("id", new Controller([ new Device({ id: "id-1" }), new Device({ id: "id-2" }) ]));
+        var externalClient = mqtt.connect("mqtt://localhost:" + PORT);
+        var numberOfStatusMessagesReceived = 0;
+        externalClient.on("message", function (topic, message) {
+            if (topic.startsWith("zway/devices") && ++numberOfStatusMessagesReceived == 2) {
+                done();
+                z.end();
+            }
+        });
+        externalClient.subscribe('zway/#', function() {
+            z.init({ host: "localhost", port: PORT, topic_prefix: "zway" }, function() {
+                externalClient.publish("zway/status", '');
+            });
+        });
+    });
 });

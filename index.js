@@ -16,17 +16,6 @@ ZwayMqttEndpoint.prototype.init = function (config, callback) {
         return self.config.topic_prefix + "/devices/" + id;
     };
 
-    var findDeviceMatchingTopic = function (topic) {
-        var matches = self.controller.devices.filter(function (d) {
-            return deviceToTopic(d) + "/set" == topic;
-        });
-        if (matches.length == 0) {
-            return null;
-        } else {
-            return matches[0];
-        }
-    };
-
     var mqttClient = new MqttClient(self.config.host, self.config.port);
     mqttClient.ondisconnect = function() {
         console.log("ZwayMqttEndpoint: Disconnected from MQTT server, attempting to reconnect");
@@ -50,27 +39,51 @@ ZwayMqttEndpoint.prototype.init = function (config, callback) {
         });
     };
 
+    var handleDeviceMessage = function (payload, topic) {
+        var findDeviceMatchingTopic = function (topic) {
+            var matches = self.controller.devices.filter(function (d) {
+                return deviceToTopic(d) + "/set" == topic;
+            });
+            if (matches.length == 0) {
+                return null;
+            } else {
+                return matches[0];
+            }
+        };
+
+        var message = JSON.parse(String.fromCharCode.apply(null, payload));
+        var device = findDeviceMatchingTopic(topic);
+        if (device == null) {
+            console.log("ZwayMqttEndpoint: Cannot find device matching topic: " + topic);
+        } else {
+            device.performCommand(message.command, message.args);
+        }
+    };
+
+    var handleStatusMessage = function() {
+        self.controller.devices.forEach(sendDeviceStatusMessage);
+    };
+
+    var sendDeviceStatusMessage = function (device) {
+        var msg = {
+            id: device.get("id"),
+            title: device.get("metrics:title"),
+            icon: device.get("metrics:icon"),
+            type: device.get("deviceType"),
+            level: device.get("metrics:level")
+        };
+        mqttClient.publish(deviceToTopic(device) + "/update", JSON.stringify(msg));
+    };
+
     this.setupSubscriptions = function () {
-        this.controller.devices.on('change:metrics:level', function (device) {
-            var msg = {
-                id: device.get("id"),
-                title: device.get("metrics:title"),
-                icon: device.get("metrics:icon"),
-                type: device.get("deviceType"),
-                level: device.get("metrics:level")
-            };
-            mqttClient.publish(deviceToTopic(device) + "/update", JSON.stringify(msg));
-        });
+        this.controller.devices.on('change:metrics:level', sendDeviceStatusMessage);
 
         mqttClient.onmessage = function(topic, payload) {
-            if (! topic.endsWith("/set")) return;
-
-            var message = JSON.parse(String.fromCharCode.apply(null, payload));
-            var device = findDeviceMatchingTopic(topic);
-            if (device == null) {
-                console.log("ZwayMqttEndpoint: Cannot find device matching topic: " + topic);
+            if (topic == self.config.topic_prefix + "/status") {
+                handleStatusMessage();
             } else {
-                device.performCommand(message.command, message.args);
+                if (!topic.endsWith("/set")) return;
+                handleDeviceMessage(payload, topic);
             }
         };
 
