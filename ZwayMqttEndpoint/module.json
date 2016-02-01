@@ -6,11 +6,10 @@
   "moduleName": "ZWayMqttEndpoint",
   "version": "1.0.0",
   "maturity": "alpha",
-  /*
-    "repository" : {
-      "type" : "git",
-      "source" : "https://github.com/goodfield/zway-mqtt"
-    },*/
+  "repository" : {
+    "type" : "git",
+    "source" : "https://github.com/kkckkc/ZWayMqttEndpoint"
+  },
   "defaults": {
     "title": "ZWayMqttEndpoint",
     "description": "MQTT integration",
