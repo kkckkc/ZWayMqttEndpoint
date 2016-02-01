@@ -77,7 +77,7 @@ MqttClient.prototype.subscribe = function (topic, callback) {
 MqttClient.prototype.unsubscribe = function (topic, callback) {
     var p = new Packet(PACKET_TYPE.UNSUBSCRIBE,
         { topicFilters: [topic], packetId: this.packetId++, clientId: this.clientId });
-    this.callbacks[packetId] = callback || NOOP;
+    this.callbacks[this.packetId] = callback || NOOP;
     this.sock.send(p.encode());
 };
 
