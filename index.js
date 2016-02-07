@@ -6,23 +6,39 @@ inherits(ZwayMqttEndpoint, AutomationModule);
 _module = ZwayMqttEndpoint;
 
 ZwayMqttEndpoint.prototype.init = function (config, callback) {
-    ZwayMqttEndpoint.super_.prototype.init(this, config);
+    ZwayMqttEndpoint.super_.prototype.init.call(this, config);
 
     var self = this,
         callback = callback || function () { };
+
+    var startsWith = function(s, searchString, position){
+        position = position || 0;
+        return s.substr(position, searchString.length) === searchString;
+    };
+
+    var endsWith = endsWith = function(s, searchString, position) {
+        var subjectString = s.toString();
+        if (typeof position !== 'number' || !isFinite(position) || Math.floor(position) !== position || position > subjectString.length) {
+            position = subjectString.length;
+        }
+        position -= searchString.length;
+        var lastIndex = subjectString.indexOf(searchString, position);
+        return lastIndex !== -1 && lastIndex === position;
+    };
 
     var deviceToTopic = function (d) {
         var id = d.get("id").toLowerCase().replace(/[^a-z0-9]/g, "_");
         return self.config.topic_prefix + "/devices/" + id;
     };
 
-    var mqttClient = new MqttClient(self.config.host, self.config.port);
+    var mqttClient = new MqttClient(self.config.host, parseInt(self.config.port));
     mqttClient.ondisconnect = function() {
         console.log("ZwayMqttEndpoint: Disconnected from MQTT server, attempting to reconnect");
         setTimeout(function() { self.connect(); }, 5000);
     };
 
     this.connect = function () {
+        console.log("ZwayMqttEndpoint: Connect");
         var connectArgs = {};
         if ("username" in self.config && self.config.username != null && self.config.username != "") {
             connectArgs.username = self.config.username;
@@ -35,6 +51,7 @@ ZwayMqttEndpoint.prototype.init = function (config, callback) {
                 console.log("ZwayMqttEndpoint: Cannot connect to MQTT server: " + p.errorMessage);
                 setTimeout(function() { self.connect(); }, 5000);
             }
+            console.log("ZwayMqttEndpoint: Connected");
             self.setupSubscriptions();
         });
     };
@@ -65,6 +82,7 @@ ZwayMqttEndpoint.prototype.init = function (config, callback) {
     };
 
     var sendDeviceStatusMessage = function (device) {
+        console.log("ZwayMqttEndpoint: Device update for " + device.get("id"));
         var msg = {
             id: device.get("id"),
             title: device.get("metrics:title"),
@@ -79,11 +97,14 @@ ZwayMqttEndpoint.prototype.init = function (config, callback) {
         this.controller.devices.on('change:metrics:level', sendDeviceStatusMessage);
 
         mqttClient.onmessage = function(topic, payload) {
-            if (topic == self.config.topic_prefix + "/status") {
-                handleStatusMessage();
-            } else {
-                if (!topic.endsWith("/set")) return;
-                handleDeviceMessage(payload, topic);
+            if (startsWith(topic, self.config.topic_prefix)) {
+                if (topic == self.config.topic_prefix + "/status") {
+                    console.log("ZwayMqttEndpoint: Status reques message on topic " + topic);
+                    handleStatusMessage();
+                } else if (endsWith(topic, "/set")) {
+                    console.log("ZwayMqttEndpoint: Status change message on topic " + topic);
+                    handleDeviceMessage(payload, topic);
+                }
             }
         };
 

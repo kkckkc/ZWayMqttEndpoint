@@ -1,6 +1,6 @@
 var net = require('net');
 
-var socket = {
+var sockets = {
     tcp: function () {
         var self = this;
 
@@ -48,7 +48,7 @@ function AutomationModule(id, controller) {
     this.controller = controller;
 }
 
-AutomationModule.prototype.init = function(subclass, config) {
+AutomationModule.prototype.init = function(config) {
     this.config = config;
 };
 

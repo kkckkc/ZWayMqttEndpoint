@@ -9,7 +9,7 @@ var NOOP = function() {},
     ];
 
 var MqttClient = function (host, port, clientId) {
-    this.sock = new socket.tcp();
+    this.sock = new sockets.tcp();
     this.host = host;
     this.port = port;
     this.packetId = 0;
@@ -137,14 +137,18 @@ DynamicByteArray.prototype.pushArr = function (data) {
 };
 
 DynamicByteArray.prototype.slice = function (start, end) {
-    var data = this.byteArray.slice(start, end || start);
+    var data = this.toArray(start, end ||start);
     var arr = new DynamicByteArray(data.length);
     arr.pushBytes(data);
     return arr;
 };
 
 DynamicByteArray.prototype.toArray = function (start, end) {
-    return this.byteArray.slice(start || 0, end || this.length);
+    start = start || 0;
+    end = end || this.length;
+    var dest = [];
+    for (var i = start; i < end; i++) dest.push(this.byteArray[i]);
+    return dest;
 };
 
 var Packet = function (type, options) {
@@ -284,6 +288,9 @@ var PacketStream = function (callback) {
 };
 
 PacketStream.prototype.processBytes = function (bytes) {
+    if (bytes instanceof ArrayBuffer) {
+        bytes = new Uint8Array(bytes);
+    }
     this.buffer.pushBytes(bytes);
 
     while (true) {
