@@ -45,7 +45,7 @@ MqttClient.prototype.connect = function (options, callback) {
     };
 
     this.sock.onrecv = function (data) {
-        packageStream.processBytes(data);
+        packageStream.processBytes(new Uint8Array(data));
     };
 
     this.sock.onclose = function () {
@@ -288,9 +288,6 @@ var PacketStream = function (callback) {
 };
 
 PacketStream.prototype.processBytes = function (bytes) {
-    if (bytes instanceof ArrayBuffer) {
-        bytes = new Uint8Array(bytes);
-    }
     this.buffer.pushBytes(bytes);
 
     while (true) {

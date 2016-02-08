@@ -17,7 +17,9 @@ var sockets = {
                 self.onconnect();
             });
             self.client.on('close', self.onclose);
-            self.client.on('data', self.onrecv);
+            self.client.on('data', function(d) {
+                self.onrecv(new Uint8Array(d).buffer);
+            });
         };
 
         this.close = function () {
@@ -79,3 +81,8 @@ function Device(props) {
 Device.prototype.get = function (name) {
     return this.props[name];
 };
+
+/*
+  Remove some capabilties that are not supported by the V8 engine running on zway
+ */
+Uint8Array.prototype.slice = function () { throw new Error("Not supported on zway"); };
