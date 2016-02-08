@@ -11,19 +11,17 @@ ZwayMqttEndpoint.prototype.init = function (config, callback) {
     var self = this,
         callback = callback || function () { };
 
-    var startsWith = function(s, searchString, position){
-        position = position || 0;
-        return s.substr(position, searchString.length) === searchString;
+    var startsWith = function(s, searchString){
+        return s.substr(0, searchString.length) === searchString;
     };
 
-    var endsWith = endsWith = function(s, searchString, position) {
-        var subjectString = s.toString();
-        if (typeof position !== 'number' || !isFinite(position) || Math.floor(position) !== position || position > subjectString.length) {
-            position = subjectString.length;
-        }
-        position -= searchString.length;
-        var lastIndex = subjectString.indexOf(searchString, position);
-        return lastIndex !== -1 && lastIndex === position;
+    var endsWith = function(s, searchString) {
+        var start = s.length - searchString.length;
+        return start === s.indexOf(searchString, start);
+    };
+
+    var log = function(msg) {
+        console.log("ZwayMqttEndpoint: " + msg);
     };
 
     var deviceToTopic = function (d) {
@@ -33,12 +31,12 @@ ZwayMqttEndpoint.prototype.init = function (config, callback) {
 
     var mqttClient = new MqttClient(self.config.host, parseInt(self.config.port));
     mqttClient.ondisconnect = function() {
-        console.log("ZwayMqttEndpoint: Disconnected from MQTT server, attempting to reconnect");
+        log("Disconnected from MQTT server, attempting to reconnect");
         setTimeout(function() { self.connect(); }, 5000);
     };
 
     this.connect = function () {
-        console.log("ZwayMqttEndpoint: Connect");
+        log("Connect");
         var connectArgs = {};
         if ("username" in self.config && self.config.username != null && self.config.username != "") {
             connectArgs.username = self.config.username;
@@ -48,10 +46,10 @@ ZwayMqttEndpoint.prototype.init = function (config, callback) {
         }
         mqttClient.connect(connectArgs, function (p) {
             if ("errorMessage" in p) {
-                console.log("ZwayMqttEndpoint: Cannot connect to MQTT server: " + p.errorMessage);
+                log("Cannot connect to MQTT server: " + p.errorMessage);
                 setTimeout(function() { self.connect(); }, 5000);
             }
-            console.log("ZwayMqttEndpoint: Connected");
+            log("Connected");
             self.setupSubscriptions();
         });
     };
@@ -71,7 +69,7 @@ ZwayMqttEndpoint.prototype.init = function (config, callback) {
         var message = JSON.parse(String.fromCharCode.apply(null, payload));
         var device = findDeviceMatchingTopic(topic);
         if (device == null) {
-            console.log("ZwayMqttEndpoint: Cannot find device matching topic: " + topic);
+            log("Cannot find device matching topic: " + topic);
         } else {
             device.performCommand(message.command, message.args);
         }
@@ -82,7 +80,7 @@ ZwayMqttEndpoint.prototype.init = function (config, callback) {
     };
 
     var sendDeviceStatusMessage = function (device) {
-        console.log("ZwayMqttEndpoint: Device update for " + device.get("id"));
+        log("Device update for " + device.get("id"));
         var msg = {
             id: device.get("id"),
             title: device.get("metrics:title"),
@@ -99,10 +97,10 @@ ZwayMqttEndpoint.prototype.init = function (config, callback) {
         mqttClient.onmessage = function(topic, payload) {
             if (startsWith(topic, self.config.topic_prefix)) {
                 if (topic == self.config.topic_prefix + "/status") {
-                    console.log("ZwayMqttEndpoint: Status reques message on topic " + topic);
+                    log("Status reques message on topic " + topic);
                     handleStatusMessage();
                 } else if (endsWith(topic, "/set")) {
-                    console.log("ZwayMqttEndpoint: Status change message on topic " + topic);
+                    log("Status change message on topic " + topic);
                     handleDeviceMessage(payload, topic);
                 }
             }
