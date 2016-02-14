@@ -17,7 +17,8 @@
     "port": "1883",
     "username": "",
     "password": "",
-    "topic_prefix": "zway"
+    "topic_prefix": "zway",
+    "coalesce_interval": "0"
   },
   "schema": {
     "type": "object",
@@ -36,6 +37,9 @@
       },
       "topic_prefix": {
         "required": true
+      },
+      "coalesce_interval": {
+        "required": false
       }
     },
     "required": true
@@ -61,6 +65,10 @@
       "topic_prefix": {
         "label": "Topic Prefix",
         "required": true
+      },
+      "coalesce_interval": {
+        "label": "Coalescing interval",
+        "required": false
       }
     }
   }

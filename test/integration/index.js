@@ -85,4 +85,36 @@ describe("ZWay Plugin", function() {
             });
         });
     });
+
+    it("should coalesce events for one device", function(done) {
+        var z = new ZwayMqttEndpoint("id", new Controller());
+
+        var externalClient = mqtt.connect("mqtt://localhost:" + PORT);
+        externalClient.on("message", function (topic, message) {
+            assert.equal("zway/devices/id/update", topic);
+            assert.equal("level2", JSON.parse(String.fromCharCode.apply(null, message)).level);
+            done();
+            externalClient.end();
+            z.end();
+        });
+
+        externalClient.subscribe('#', function() {
+            z.init({ host: "localhost", port: PORT, topic_prefix: "zway", coalesce_interval: 100 }, function() {
+                z.controller.emit("change:metrics:level", new Device({
+                    id: "id",
+                    "metrics:title": "title",
+                    "metrics:level": "level",
+                    "metrics:icon": "icon",
+                    deviceType: "deviceType"
+                }));
+                z.controller.emit("change:metrics:level", new Device({
+                    id: "id",
+                    "metrics:title": "title",
+                    "metrics:level": "level2",
+                    "metrics:icon": "icon",
+                    deviceType: "deviceType"
+                }));
+            });
+        });
+    });
 });

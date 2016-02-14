@@ -25,8 +25,9 @@ ZwayMqttEndpoint.prototype.init = function (config, callback) {
     };
 
     var deviceToTopic = function (d) {
-        var id = d.get("id").toLowerCase().replace(/[^a-z0-9]/g, "_");
-        return self.config.topic_prefix + "/devices/" + id;
+        var id = (typeof d == "string") ? d : d.get("id");
+        var normalizedId = id.toLowerCase().replace(/[^a-z0-9]/g, "_");
+        return self.config.topic_prefix + "/devices/" + normalizedId;
     };
 
     var mqttClient = new MqttClient(self.config.host, parseInt(self.config.port));
@@ -91,8 +92,36 @@ ZwayMqttEndpoint.prototype.init = function (config, callback) {
         mqttClient.publish(deviceToTopic(device) + "/update", JSON.stringify(msg));
     };
 
+    var queue = [];
+    var queueDeviceStatusMessage = function (device) {
+        queue.push({
+            id: device.get("id"),
+            title: device.get("metrics:title"),
+            icon: device.get("metrics:icon"),
+            type: device.get("deviceType"),
+            level: device.get("metrics:level")
+        });
+    };
+
+    var processQueue = function() {
+        var devicesSent = [];
+        for (var i = queue.length - 1; i >= 0; i--) {
+            if (queue[i].id in devicesSent) continue;
+            mqttClient.publish(deviceToTopic(queue[i].id) + "/update", JSON.stringify(queue[i]));
+            devicesSent[queue[i].id] = true
+        }
+        queue = [];
+    };
+
     this.setupSubscriptions = function () {
-        this.controller.devices.on('change:metrics:level', sendDeviceStatusMessage);
+        this.controller.devices.on('change:metrics:level', function (device) {
+            queueDeviceStatusMessage(device);
+            if (self.config['coalesce_interval'] > 0) {
+                setTimeout(processQueue, self.config['coalesce_interval']);
+            } else {
+                processQueue();
+            }
+        });
 
         mqttClient.onmessage = function(topic, payload) {
             if (startsWith(topic, self.config.topic_prefix)) {
