@@ -24,19 +24,24 @@ The following topics are used (`<prefix>` can be configured and is by default `z
 1. `<prefix>/<device-id>/update` - app sends update on this topic whenever the state of a zway device is changed. The
 message is a JSON object with the following properties:
 
-  1. id
-  2. title
-  3. icon
-  4. type
-  5. level
+    1. id
+    2. title
+    3. icon
+    4. type
+    5. level
 
 2. `<prefix>/status` - request to get status of all devices. ZWayMqttEndpoint responds with status update (see 1) for all
 devices
 
-3. `<prefix>/<device-id>/set` - request to run zway command. Accepts JSON payload with the following properties:
+3. `<prefix>/<device-id>/set` - request to run zway command. Accepts JSON payload with two properties `command` and `args`
 
-  1. command
-  2. args
+    Examples:
+
+    ```
+{ "command": "on" }
+{ "command": "off" }
+{ "command": "exact", "args": { "level": 50 } }
+    ```
 
 
 ### Code overview
