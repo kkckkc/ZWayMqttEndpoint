@@ -45,19 +45,34 @@ describe("MQTT client", function() {
         });
 
         it("should send messages", function(done) {
-            var externalClient = mqtt.connect("mqtt://localhost:" + PORT);
-
-            externalClient.on("message", function (topic, message) {
-                assert.equal("test/send-test", topic);
-                assert.equal("Dolor sit amet", String.fromCharCode.apply(null, message));
+            var fn = function (packet, client) {
+                if (packet.topic != "test/send-test") return;
+                assert.equal(false, packet.retain);
+                assert.equal("Dolor sit amet", String.fromCharCode.apply(null, packet.payload));
+                anonymousServer.removeListener("published", fn);
                 done();
-                externalClient.end();
-            });
+            };
 
-            externalClient.subscribe('test/send-test', function() {
-                client().connect({}, function (pkg, c) {
-                    c.publish("test/send-test", "Dolor sit amet");
-                });
+            anonymousServer.on('published', fn);
+
+            client().connect({}, function (pkg, c) {
+                c.publish("test/send-test", "Dolor sit amet");
+            });
+        });
+
+        it("should send messages with retain flag", function(done) {
+            var fn = function (packet, client) {
+                if (packet.topic != "test/send-test") return;
+                assert.equal(true, packet.retain);
+                assert.equal("Dolor sit amet", String.fromCharCode.apply(null, packet.payload));
+                anonymousServer.removeListener("published", fn);
+                done();
+            };
+
+            anonymousServer.on('published', fn);
+
+            client().connect({}, function (pkg, c) {
+                c.publish("test/send-test", "Dolor sit amet", true);
             });
         });
     });

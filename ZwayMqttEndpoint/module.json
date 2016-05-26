@@ -40,6 +40,9 @@
       },
       "coalesce_interval": {
         "required": false
+      },
+      "retain": {
+        "required": false
       }
     },
     "required": true
@@ -68,6 +71,10 @@
       },
       "coalesce_interval": {
         "label": "Coalescing interval",
+        "required": false
+      },
+      "retain": {
+        "label": "Send MQTT retain flag",
         "required": false
       }
     }

@@ -68,6 +68,11 @@ ZwayMqttEndpoint.prototype.init = function (config, callback) {
         }
     };
 
+    this.getRetainFlag = function() {
+        if ("retain" in self.config) return "true" == self.config.retain;
+        return false;
+    };
+
     var handleDeviceMessage = function (payload, topic) {
         var findDeviceMatchingTopic = function (topic) {
             var matches = self.controller.devices.filter(function (d) {
@@ -102,7 +107,7 @@ ZwayMqttEndpoint.prototype.init = function (config, callback) {
             type: device.get("deviceType"),
             level: device.get("metrics:level")
         };
-        mqttClient.publish(deviceToTopic(device) + "/update", JSON.stringify(msg));
+        mqttClient.publish(deviceToTopic(device) + "/update", JSON.stringify(msg), self.getRetainFlag());
     };
 
     var queue = [];
@@ -120,7 +125,7 @@ ZwayMqttEndpoint.prototype.init = function (config, callback) {
         var devicesSent = [];
         for (var i = queue.length - 1; i >= 0; i--) {
             if (queue[i].id in devicesSent) continue;
-            mqttClient.publish(deviceToTopic(queue[i].id) + "/update", JSON.stringify(queue[i]));
+            mqttClient.publish(deviceToTopic(queue[i].id) + "/update", JSON.stringify(queue[i]), self.getRetainFlag());
             devicesSent[queue[i].id] = true
         }
         queue = [];

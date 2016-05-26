@@ -62,8 +62,8 @@ MqttClient.prototype.close = function () {
     this.sock.close();
 };
 
-MqttClient.prototype.publish = function (topic, message) {
-    var p = new Packet(PACKET_TYPE.PUBLISH, {topicName: topic, payload: message, clientId: this.clientId});
+MqttClient.prototype.publish = function (topic, message, retain) {
+    var p = new Packet(PACKET_TYPE.PUBLISH, {topicName: topic, payload: message, clientId: this.clientId, retain: retain});
     this.sock.send(p.encode());
 };
 
@@ -187,6 +187,8 @@ Packet.prototype.encode = function () {
             break;
 
         case PACKET_TYPE.PUBLISH:
+            if (this.options.retain) byte1 |= (1 << 0);
+
             arr.pushString(this.options.topicName, true);
 
             if (this.options.payload instanceof Array) {

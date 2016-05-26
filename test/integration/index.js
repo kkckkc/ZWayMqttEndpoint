@@ -53,6 +53,30 @@ describe("ZWay Plugin", function() {
         });
     });
 
+    it("should emit events on mqtt topic with retain flag if so configured", function(done) {
+        var fn = function (packet, client) {
+            if (packet.topic != "zway/devices/id/update") return;
+            assert.equal(true, packet.retain);
+            assert.equal("deviceType", JSON.parse(String.fromCharCode.apply(null, packet.payload)).type);
+            anonymousServer.removeListener("published", fn);
+            done();
+        };
+
+        anonymousServer.on('published', fn);
+
+        var z = new ZwayMqttEndpoint("id", new Controller());
+
+        z.init({ retain: "true", host: "localhost", port: PORT, topic_prefix: "zway" }, function() {
+            z.controller.emit("change:metrics:level", new Device({
+                id: "id",
+                "metrics:title": "title",
+                "metrics:level": "level",
+                "metrics:icon": "icon",
+                deviceType: "deviceType"
+            }));
+        });
+    });
+
     it("should call device command on mqtt messages", function (done) {
         var mockDevice = new Device({ id: "id-182" });
         var z = new ZwayMqttEndpoint("id", new Controller([ mockDevice ]));
