@@ -55,6 +55,19 @@ ZwayMqttEndpoint.prototype.init = function (config, callback) {
         });
     };
 
+    this.parsePayload = function(payload) {
+        try {
+            return JSON.parse(String.fromCharCode.apply(null, payload));
+        } catch (e) {
+            var bytes = "";
+            for (var i = 0; i < payload.length; i++) {
+                bytes += payload[i].toString(16);
+                if (i < (payload.length - 1)) bytes += ", ";
+            }
+            throw Error("Cannot parse payload, string: '" + String.fromCharCode.apply(null, payload) + "', bytes: " + bytes);
+        }
+    };
+
     var handleDeviceMessage = function (payload, topic) {
         var findDeviceMatchingTopic = function (topic) {
             var matches = self.controller.devices.filter(function (d) {
@@ -67,7 +80,7 @@ ZwayMqttEndpoint.prototype.init = function (config, callback) {
             }
         };
 
-        var message = JSON.parse(String.fromCharCode.apply(null, payload));
+        var message = self.parsePayload(payload);
         var device = findDeviceMatchingTopic(topic);
         if (device == null) {
             log("Cannot find device matching topic: " + topic);
